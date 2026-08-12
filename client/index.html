@@ -10,8 +10,8 @@
 <link rel="apple-touch-icon" href="icon.svg">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
-<meta name="apple-mobile-web-app-title" content="24">
-<title>24 — resolve within a day</title>
+<meta name="apple-mobile-web-app-title" content="24h">
+<title>24h — resolve within a day</title>
 <style>
   :root{
     --paper:#f4f1ea;
@@ -181,7 +181,7 @@
 
 <header>
   <div class="wrap hbar">
-    <div class="brand">24<span>resolve within a day</span></div>
+    <div class="brand">24h<span>resolve within a day</span></div>
     <div class="stats">
       <div class="stat debt"><b id="s-debt">0</b><i>debt</i></div>
       <div class="stat"><b id="s-rate">—</b><i>rate 7d</i></div>
@@ -220,7 +220,7 @@
 <script>
 "use strict";
 /* ============================================================
-   24 — Phase 0 prototype
+   24h — Phase 0 prototype
    Local-only. Data in localStorage. No server, no accounts.
    ============================================================ */
 
@@ -549,7 +549,7 @@ document.getElementById("btn-export").onclick = () => {
   const blob = new Blob([JSON.stringify(tasks, null, 2)], { type: "application/json" });
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob);
-  a.download = `24-export-${new Date().toISOString().slice(0, 10)}.json`;
+  a.download = `24h-export-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
 };
 document.getElementById("btn-import").onclick = () => {

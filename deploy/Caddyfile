@@ -1,7 +1,7 @@
 # /etc/caddy/Caddyfile
 # Caddy fetches and renews the TLS cert automatically on first request.
 
-24.namastevis.in {
+24h.namastevis.in {
 	encode gzip
 
 	# Phase 1+: the sync API. Harmless while no server is running —
@@ -11,7 +11,7 @@
 	}
 
 	handle {
-		root * /srv/24/client
+		root * /srv/24h/client
 		try_files {path} /index.html
 		file_server
 	}
@@ -24,6 +24,6 @@
 	}
 
 	log {
-		output file /var/log/caddy/24.log
+		output file /var/log/caddy/24h.log
 	}
 }

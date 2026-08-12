@@ -1,8 +1,8 @@
-# 24
+# 24h
 
 A todo app where the only thing that matters is how long a task has been sitting there.
 
-Live at **[24.namastevis.in](https://24.namastevis.in)**
+Live at **[24h.namastevis.in](https://24h.namastevis.in)**
 
 ---
 
@@ -32,9 +32,22 @@ There is no snooze, no priority, no due dates, no someday list. Those are the es
 
 ## Status
 
-**Phase 0** — a single self-contained `index.html`. No build step, no server, no accounts. Data lives in `localStorage` on the device, with JSON export/import.
+**Phase 0** — a single self-contained `client/index.html`. No build step, no server, no accounts. Data lives in `localStorage` on the device, with JSON export/import.
 
-Running it: open `index.html` in a browser, or `python3 -m http.server` in this directory. Click **Load demo data** to see all four decay stages at once.
+```bash
+cd client && python3 -m http.server 8000   # then open http://localhost:8000
+```
+
+Or just open `client/index.html` directly. Click **Load demo data** to see all four decay stages at once.
+
+### Layout
+
+```
+client/     the whole app — index.html, manifest, icon
+deploy/     Caddyfile, systemd unit, one-time VPS setup script
+docs/       SPEC.md — the full product and technical spec
+.github/    deploy workflow (rsync client/ to the VPS on push to main)
+```
 
 Roadmap:
 
@@ -59,19 +72,21 @@ Roadmap:
 
 ## Deploying to the VPS
 
-DNS: `A` record for `24` → your VPS IP.
+**Step-by-step Hostinger walkthrough: [`docs/HOSTINGER.md`](docs/HOSTINGER.md).** The reference configs below are what that guide installs.
+
+DNS: `A` record for `24h` → your VPS IP.
 
 ### Caddy — `/etc/caddy/Caddyfile`
 
 ```
-24.namastevis.in {
+24h.namastevis.in {
 	encode gzip
 
 	handle /api/* {
 		reverse_proxy localhost:8080
 	}
 	handle {
-		root * /srv/24/client
+		root * /srv/24h/client
 		try_files {path} /index.html
 		file_server
 	}
@@ -80,17 +95,17 @@ DNS: `A` record for `24` → your VPS IP.
 
 TLS certs are fetched automatically on the first request. Nothing else to configure.
 
-### systemd (Phase 1, once there's a server) — `/etc/systemd/system/24.service`
+### systemd (Phase 1, once there's a server) — `/etc/systemd/system/24h.service`
 
 ```ini
 [Unit]
-Description=24
+Description=24h
 After=network.target
 
 [Service]
-User=app24
-WorkingDirectory=/srv/24/server
-EnvironmentFile=/srv/24/server/.env
+User=app24h
+WorkingDirectory=/srv/24h/server
+EnvironmentFile=/srv/24h/server/.env
 ExecStart=/usr/bin/node dist/index.js
 Restart=always
 RestartSec=3
@@ -102,56 +117,45 @@ WantedBy=multi-user.target
 ### One-time server setup
 
 ```bash
-sudo useradd -r -s /usr/sbin/nologin app24
-sudo mkdir -p /srv/24/{client,server,data}
-sudo chown -R app24: /srv/24
+sudo useradd -r -s /usr/sbin/nologin app24h
+sudo mkdir -p /srv/24h/{client,server,data}
+sudo chown -R app24h: /srv/24h
 sudo systemctl enable --now caddy
 ```
 
-### GitHub Actions — `.github/workflows/deploy.yml`
+### GitHub Actions
 
-```yaml
-name: deploy
-on:
-  push:
-    branches: [main]
+`.github/workflows/deploy.yml` rsyncs `client/` to `/srv/24h/client` on every push to `main`, then smoke-tests the live URL.
 
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
+Repo secrets needed under **Settings → Secrets and variables → Actions**:
 
-      - name: Add SSH key
-        run: |
-          mkdir -p ~/.ssh
-          echo "${{ secrets.SSH_KEY }}" > ~/.ssh/id_ed25519
-          chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+| Secret | Value |
+|---|---|
+| `SSH_HOST` | VPS IP or hostname |
+| `SSH_USER` | deploy user on the VPS |
+| `SSH_KEY` | private half of a **deploy-only** ed25519 keypair |
 
-      - name: Rsync client
-        run: |
-          rsync -az --delete \
-            -e "ssh -i ~/.ssh/id_ed25519" \
-            ./client/ ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/srv/24/client/
-
-      # Phase 1+: build and ship the server, then
-      # ssh ... 'cd /srv/24/server && npm ci --omit=dev && sudo systemctl restart 24'
+```bash
+ssh-keygen -t ed25519 -f ~/.ssh/24h_deploy -C "24h deploy" -N ""
+ssh-copy-id -i ~/.ssh/24h_deploy.pub user@vps     # public half onto the box
+pbcopy < ~/.ssh/24h_deploy                        # private half into SSH_KEY
 ```
 
-Repo secrets needed: `SSH_HOST`, `SSH_USER`, `SSH_KEY` (a deploy-only private key). Give the deploy user a narrow sudoers entry for `systemctl restart 24` rather than full sudo.
+Give that user a narrow sudoers entry for `systemctl restart 24h` rather than full sudo.
+
+The deploy job is gated on a repo **variable** `DEPLOY_ENABLED = true` (Settings → Secrets and variables → Actions → Variables). Until you set it, pushes skip deployment and stay green — so you can commit freely before the VPS exists.
 
 ### Backups (Phase 1)
 
 ```
-0 3 * * * sqlite3 /srv/24/data/24.db ".backup '/srv/24/data/bk-$(date +\%F).db'" && find /srv/24/data -name 'bk-*.db' -mtime +14 -delete
+0 3 * * * sqlite3 /srv/24h/data/24h.db ".backup '/srv/24h/data/bk-$(date +\%F).db'" && find /srv/24h/data -name 'bk-*.db' -mtime +14 -delete
 ```
 
 ---
 
 ## Open-source notes
 
-This repo is public but built for one person — there's no multi-user support and no self-host documentation beyond the above. Nothing personal is committed: the passphrase, VAPID keys, and DB path all live in `/srv/24/server/.env` on the box (mode `600`) and in GitHub Secrets. `data/` and `.env` are gitignored.
+This repo is public but built for one person — there's no multi-user support and no self-host documentation beyond the above. Nothing personal is committed: the passphrase, VAPID keys, and DB path all live in `/srv/24h/server/.env` on the box (mode `600`) and in GitHub Secrets. `data/` and `.env` are gitignored.
 
 ## License
 

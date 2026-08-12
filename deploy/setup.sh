@@ -2,7 +2,7 @@
 # One-time VPS setup. Run as a sudo-capable user on the Hostinger box.
 set -euo pipefail
 
-DOMAIN="24.namastevis.in"
+DOMAIN="24h.namastevis.in"
 DEPLOY_USER="${SUDO_USER:-$USER}"
 
 echo "==> Installing Caddy"
@@ -16,10 +16,10 @@ sudo apt-get update -qq
 sudo apt-get install -y caddy
 
 echo "==> Creating app user and directories"
-sudo useradd -r -s /usr/sbin/nologin app24 2>/dev/null || true
-sudo mkdir -p /srv/24/{client,server,data}
-sudo chown -R "$DEPLOY_USER":"$DEPLOY_USER" /srv/24/client
-sudo chown -R app24:app24 /srv/24/server /srv/24/data
+sudo useradd -r -s /usr/sbin/nologin app24h 2>/dev/null || true
+sudo mkdir -p /srv/24h/{client,server,data}
+sudo chown -R "$DEPLOY_USER":"$DEPLOY_USER" /srv/24h/client
+sudo chown -R app24h:app24h /srv/24h/server /srv/24h/data
 
 echo "==> Installing Caddyfile"
 sudo cp "$(dirname "$0")/Caddyfile" /etc/caddy/Caddyfile
@@ -37,11 +37,11 @@ cat <<EOF
 Done.
 
 Next:
-  1. Point an A record for '24' at this box's IP.
-  2. Push to main — the GitHub Action rsyncs client/ to /srv/24/client.
+  1. Point an A record for '24h' at this box's IP.
+  2. Push to main — the GitHub Action rsyncs client/ to /srv/24h/client.
   3. Visit https://$DOMAIN
 
 Phase 1 (server) additionally needs:
-  sudo cp deploy/24.service /etc/systemd/system/
-  sudo systemctl daemon-reload && sudo systemctl enable --now 24
+  sudo cp deploy/24h.service /etc/systemd/system/
+  sudo systemctl daemon-reload && sudo systemctl enable --now 24h
 EOF

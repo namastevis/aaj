@@ -1,6 +1,6 @@
 {
-  "name": "24 — resolve within a day",
-  "short_name": "24",
+  "name": "24h — resolve within a day",
+  "short_name": "24h",
   "description": "Every task resolved within 24 hours of capture. Delay is visible.",
   "start_url": "/",
   "scope": "/",

@@ -22,4 +22,4 @@ build/
 *.swp
 
 # local exports
-24-export-*.json
+24h-export-*.json

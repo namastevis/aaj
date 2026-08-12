@@ -1,7 +1,7 @@
-# The 24-Hour Task App — Product & Technical Spec
+# 24h — Product & Technical Spec
 
-**Name:** 24 (repo: `twentyfour`)
-**Domain:** `24.namastevis.in`
+**Name:** 24h (repo: [namastevis/24h](https://github.com/namastevis/24h))
+**Domain:** `24h.namastevis.in`
 **Host:** Hostinger VPS · source public on GitHub · deploy via GitHub Actions over SSH
 **Author:** spec v2, Aug 2026
 
@@ -233,81 +233,54 @@ Total server footprint: ~120MB RAM. Runs comfortably on a 1GB VPS.
 **Repo layout**
 
 ```
-halflife/
-  client/           # vite react pwa
-  server/           # fastify + sqlite
-  server/data/      # halflife.db  (gitignored, backed up)
-  Caddyfile
-  deploy.sh
-  halflife.service
+24h/                  github.com/namastevis/24h
+  client/             Phase 0 lives here: index.html, manifest, icon
+  server/             Phase 1: fastify + sqlite
+  deploy/             Caddyfile, 24h.service, setup.sh
+  docs/SPEC.md        this document
+  .github/workflows/deploy.yml
 ```
+
+On the VPS: `/srv/24h/{client,server,data}`. The DB is `/srv/24h/data/24h.db` — outside the repo, gitignored, backed up nightly.
 
 ---
 
 ## 8. Deploy plan (Hostinger VPS)
 
-**Prereqs:** Ubuntu 22/24 VPS, root SSH, domain DNS managed where you bought it.
+**Prereqs:** Ubuntu 22.04 or 24.04 VPS, root SSH, DNS managed at your registrar.
 
-1. **DNS** — add an `A` record: `do.namastevis.xxx → <VPS IP>`. TTL 300. Wait for propagation (`dig do.namastevis.xxx`).
+1. **DNS** — `A` record: `24h → <VPS IP>`, TTL 300. Verify with `dig 24h.namastevis.in +short`.
 
-2. **Harden the box** — create a non-root user, add your SSH key, disable password auth and root login in `/etc/ssh/sshd_config`, enable `ufw` allowing only 22/80/443.
+2. **Harden the box** — non-root user with your SSH key; disable password auth and root login in `/etc/ssh/sshd_config`; `ufw` allowing only 22/80/443.
 
-3. **Install runtime**
+3. **Run the setup script** — installs Caddy, creates `/srv/24h/*`, drops the Caddyfile in place, enables the firewall:
+   ```bash
+   git clone https://github.com/namastevis/24h.git && cd 24h
+   ./deploy/setup.sh
+   ```
+
+4. **Deploy key** — generate a deploy-only keypair, put the public half in the VPS user's `~/.ssh/authorized_keys`, and the private half in GitHub → Settings → Secrets → Actions as `SSH_KEY`. Add `SSH_HOST` and `SSH_USER` alongside it.
+
+5. **Push to main.** The Action rsyncs `client/` to `/srv/24h/client` and smoke-tests the URL. That's the entire Phase 0 deploy — no Node, no service, no database yet.
+
+### Phase 1 additions
+
+6. **Runtime**
    ```bash
    curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash -
    sudo apt install -y nodejs build-essential   # build-essential for better-sqlite3
    ```
 
-4. **Install Caddy** (`apt` repo from caddyserver.com), then `/etc/caddy/Caddyfile`:
-   ```
-   do.namastevis.xxx {
-     handle /api/* {
-       reverse_proxy localhost:8080
-     }
-     handle {
-       root * /srv/halflife/client
-       try_files {path} /index.html
-       file_server
-     }
-   }
-   ```
-   Caddy fetches the TLS cert automatically on first request.
-
-5. **App user + directories**
+7. **Service**
    ```bash
-   sudo useradd -r -s /usr/sbin/nologin halflife
-   sudo mkdir -p /srv/halflife/{client,server,data}
-   sudo chown -R halflife: /srv/halflife
+   sudo cp deploy/24h.service /etc/systemd/system/
+   sudo systemctl daemon-reload && sudo systemctl enable --now 24h
    ```
+   `/srv/24h/server/.env` (mode `600`, owned by `app24h`) holds `PORT=8080`, `PASSPHRASE=…`, `VAPID_PUBLIC/PRIVATE=…`, `DB_PATH=/srv/24h/data/24h.db`. Then uncomment the server block in `deploy.yml`.
 
-6. **systemd unit** `/etc/systemd/system/halflife.service`
-   ```ini
-   [Unit]
-   After=network.target
-   [Service]
-   User=halflife
-   WorkingDirectory=/srv/halflife/server
-   EnvironmentFile=/srv/halflife/server/.env
-   ExecStart=/usr/bin/node dist/index.js
-   Restart=always
-   [Install]
-   WantedBy=multi-user.target
+8. **Backups** — nightly cron; SQLite backup is one command:
    ```
-   `.env` holds `PORT=8080`, `PASSPHRASE=…`, `VAPID_PUBLIC/PRIVATE=…`, `DB_PATH=/srv/halflife/data/halflife.db`. Mode `600`.
-
-7. **Deploy script** — build locally, rsync artifacts up, restart service:
-   ```bash
-   npm --prefix client run build
-   npm --prefix server run build
-   rsync -az client/dist/  user@vps:/srv/halflife/client/
-   rsync -az server/dist/ server/package*.json user@vps:/srv/halflife/server/
-   ssh user@vps 'cd /srv/halflife/server && npm ci --omit=dev && sudo systemctl restart halflife'
-   ```
-   Upgrade to a GitHub Actions workflow doing the same over SSH once it's stable.
-
-8. **Backups** — nightly cron, since SQLite backup is one command:
-   ```
-   0 3 * * * sqlite3 /srv/halflife/data/halflife.db ".backup '/srv/halflife/data/bk-$(date +\%F).db'" && find /srv/halflife/data -name 'bk-*.db' -mtime +14 -delete
+   0 3 * * * sqlite3 /srv/24h/data/24h.db ".backup '/srv/24h/data/bk-$(date +\%F).db'" && find /srv/24h/data -name 'bk-*.db' -mtime +14 -delete
    ```
    Then rclone/scp the backup dir offsite weekly. Also expose `GET /api/export` returning full JSON — your data should never be trapped.
 
@@ -352,23 +325,9 @@ Contexts, weekly review email, mobile widget.
 
 ## 11. Repo and deploy shape
 
-```
-twentyfour/                       github.com/<you>/twentyfour  (public)
-  client/
-    index.html                    Phase 0 lives entirely here
-    manifest.webmanifest          Phase 2
-    sw.js                         Phase 2
-  server/                         Phase 1
-    src/ · package.json
-  deploy/
-    Caddyfile
-    24.service
-  .github/workflows/deploy.yml    rsync client + restart service on push to main
-  .gitignore                      data/  .env  node_modules/
-  README.md · LICENSE (MIT)
-```
+Repo: **github.com/namastevis/24h** (public). Layout is in §7 above.
 
-**Secrets never enter the repo.** `PASSPHRASE`, VAPID keys, and `DB_PATH` live in `/srv/24/server/.env` (mode `600`) on the VPS. `SSH_HOST` / `SSH_USER` / `SSH_KEY` live in GitHub Secrets, using a deploy-only keypair. Give the deploy user a single sudoers line for `systemctl restart 24` rather than blanket sudo.
+**Secrets never enter the repo.** `PASSPHRASE`, VAPID keys, and `DB_PATH` live in `/srv/24h/server/.env` (mode `600`) on the VPS. `SSH_HOST` / `SSH_USER` / `SSH_KEY` live in GitHub Secrets, using a deploy-only keypair. Give the deploy user a single sudoers line for `systemctl restart 24h` rather than blanket sudo.
 
 Because the repo is public, treat the passphrase as the only thing standing between the internet and your list: make it long, and rate-limit `/login` (5 attempts per 15 min per IP) from day one.
 
