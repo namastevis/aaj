@@ -1,0 +1,25 @@
+# secrets — never commit
+.env
+.env.*
+!.env.example
+
+# server data
+data/
+*.db
+*.db-shm
+*.db-wal
+bk-*.db
+
+# deps & builds
+node_modules/
+dist/
+build/
+
+# editors / os
+.DS_Store
+.vscode/
+.idea/
+*.swp
+
+# local exports
+24-export-*.json

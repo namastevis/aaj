@@ -1,0 +1,29 @@
+# /etc/caddy/Caddyfile
+# Caddy fetches and renews the TLS cert automatically on first request.
+
+24.namastevis.in {
+	encode gzip
+
+	# Phase 1+: the sync API. Harmless while no server is running —
+	# comment out until then if you prefer a clean 404.
+	handle /api/* {
+		reverse_proxy localhost:8080
+	}
+
+	handle {
+		root * /srv/24/client
+		try_files {path} /index.html
+		file_server
+	}
+
+	header {
+		# never cache the shell, so deploys land immediately
+		?Cache-Control "no-cache"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "no-referrer"
+	}
+
+	log {
+		output file /var/log/caddy/24.log
+	}
+}

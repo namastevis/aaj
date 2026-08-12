@@ -1,0 +1,25 @@
+# /etc/systemd/system/24.service
+# Phase 1 only — not needed while the app is static.
+
+[Unit]
+Description=24 — resolve within a day
+After=network.target
+
+[Service]
+Type=simple
+User=app24
+WorkingDirectory=/srv/24/server
+EnvironmentFile=/srv/24/server/.env
+ExecStart=/usr/bin/node dist/index.js
+Restart=always
+RestartSec=3
+
+# hardening
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/24/data
+
+[Install]
+WantedBy=multi-user.target
