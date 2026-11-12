@@ -30,8 +30,5 @@ The timer works in Pomodoro blocks: 25 minutes of focus, 5 minutes of break. Whe
 ## Files
 One HTML file and three small helpers: `index.html` (the whole app), `manifest.webmanifest`, `icon.svg`, and `sw.js` (offline support). No build step, no server. Hosted on GitHub Pages.
 
-## History
-Aaj began as **24h**, a todo app built on the same rule: every task resolved within a day. The old address, 24h.namastevis.in, redirects here.
-
 ## Licence
 MIT
