@@ -1,0 +1,508 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Aaj: three things, today</title>
+<meta name="description" content="Write down what's on your mind. Aaj shows you three tasks at a time, and every task gets resolved within a day. No sign-up, nothing kept.">
+<meta name="theme-color" content="#0E5B5A">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="icon.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anek+Latin:wdth,wght@75..125,400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --paper: #F3F7F5; --card: #FFFFFF; --ink: #0B3433; --muted: #5A7270; --rule: #D5E3DF;
+  --peacock: #0E5B5A; --peacock-soft: #CFE6E1; --marigold: #FFB521; --marigold-ink: #3A2700;
+  --late: #C8211B; --late-soft: #FBE3E0; --shadow: 0 1px 0 rgba(11,52,51,.06);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root { --paper: #082F2E; --card: #0D3B3A; --ink: #E9F2EE; --muted: #9DBDB8; --rule: #1E4A48;
+    --peacock: #5FB3A8; --peacock-soft: #16504D; --late: #FF7A6E; --late-soft: #4A1F1C; color-scheme: dark; }
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body {
+  background: var(--paper); color: var(--ink);
+  font-family: "Anek Latin", system-ui, -apple-system, "Segoe UI", sans-serif;
+  font-size: 17px; line-height: 1.45; -webkit-tap-highlight-color: transparent;
+}
+button, input { font: inherit; color: inherit; }
+button { cursor: pointer; }
+:focus-visible { outline: 3px solid var(--marigold); outline-offset: 2px; border-radius: 6px; }
+
+.app { max-width: 34rem; margin: 0 auto; min-height: 100%; display: flex; flex-direction: column;
+  padding: calc(env(safe-area-inset-top, 0px) + 14px) 18px 0; }
+header { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; padding-bottom: 10px; }
+.brand { font-variation-settings: "wdth" 80; font-weight: 700; font-size: 1.9rem; letter-spacing: -.01em; margin: 0; }
+.date { color: var(--muted); font-size: .95rem; margin-left: 10px; }
+.icon-btn { background: none; border: 0; width: 44px; height: 44px; border-radius: 22px; display: grid; place-items: center; color: var(--muted); }
+.icon-btn:hover { background: var(--rule); }
+
+main { flex: 1; padding-bottom: 200px; }
+h2 { font-variation-settings: "wdth" 85; font-weight: 700; font-size: 1.45rem; line-height: 1.2; margin: 18px 0 6px; }
+.lead { color: var(--muted); margin: 0 0 16px; }
+
+/* capture */
+.draft { list-style: none; margin: 0 0 12px; padding: 0; }
+.draft li { display: flex; align-items: center; gap: 8px; padding: 10px 0; border-bottom: 1px solid var(--rule); }
+.draft li span { flex: 1; }
+.x { background: none; border: 0; color: var(--muted); width: 36px; height: 36px; border-radius: 18px; font-size: 1.2rem; }
+
+/* bottom composer */
+.dock { position: fixed; left: 0; right: 0; bottom: 0; background: linear-gradient(to top, var(--paper) 75%, transparent);
+  padding: 18px 18px calc(env(safe-area-inset-bottom, 0px) + 14px); }
+.dock-inner { max-width: 34rem; margin: 0 auto; display: grid; gap: 10px; }
+.composer { display: flex; gap: 8px; }
+.composer input { flex: 1; min-width: 0; border: 1.5px solid var(--rule); background: var(--card); border-radius: 14px;
+  padding: 14px 16px; font-size: 1.05rem; }
+.composer input:focus { border-color: var(--peacock); outline: none; }
+.mic { width: 54px; flex: none; border: 0; border-radius: 14px; background: var(--peacock); color: #fff; display: grid; place-items: center; }
+.mic.on { background: var(--late); }
+@media (prefers-reduced-motion: no-preference) { .mic.on { animation: pulse 1.2s ease-in-out infinite; } }
+@keyframes pulse { 50% { box-shadow: 0 0 0 8px color-mix(in srgb, var(--late) 25%, transparent); } }
+.primary { border: 0; border-radius: 14px; padding: 15px 18px; background: var(--peacock); color: #fff; font-weight: 700; font-size: 1.05rem; width: 100%; }
+.primary:disabled { opacity: .4; cursor: default; }
+.ghost { border: 1.5px solid var(--rule); background: var(--card); border-radius: 12px; padding: 10px 14px; font-weight: 600; }
+.note { color: var(--muted); font-size: .92rem; margin: 0; text-align: center; }
+.note.warn { color: var(--late); }
+
+/* sort */
+.sort-item { background: var(--card); border-radius: 16px; padding: 14px 16px; margin-bottom: 12px; box-shadow: var(--shadow); }
+.sort-item .t { font-weight: 600; margin: 0 0 10px; }
+.q { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 8px; flex-wrap: wrap; }
+.q label { color: var(--muted); font-size: .95rem; }
+.seg { display: flex; gap: 6px; flex-wrap: wrap; }
+.seg button { border: 1.5px solid var(--rule); background: transparent; border-radius: 10px; padding: 7px 11px; font-size: .95rem; }
+.seg button[aria-pressed="true"] { background: var(--peacock); border-color: var(--peacock); color: #fff; }
+.sink { margin-top: 12px; padding-top: 10px; border-top: 1px dashed var(--rule); font-size: .95rem; }
+.sink p { margin: 0 0 8px; color: var(--muted); }
+.row-btns { display: flex; gap: 8px; flex-wrap: wrap; }
+
+/* today */
+.three { list-style: none; margin: 8px 0 0; padding: 0; display: grid; gap: 12px; }
+.task { position: relative; background: var(--card); border-radius: 18px; box-shadow: var(--shadow); overflow: hidden; touch-action: pan-y; }
+.task-main { width: 100%; text-align: left; border: 0; background: none; padding: 16px 16px 14px; display: block; }
+.task .title { font-weight: 600; font-size: 1.08rem; display: block; }
+.task.big .title { font-size: 1.25rem; }
+.meta { display: flex; align-items: center; gap: 10px; margin-top: 8px; color: var(--muted); font-size: .9rem; }
+.dots { display: inline-flex; gap: 4px; }
+.dots i { width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid var(--peacock); display: inline-block; }
+.dots i.f { background: var(--peacock); }
+.dots i.x { border-style: dashed; }
+.start-here { background: var(--marigold); color: var(--marigold-ink); border-radius: 999px; padding: 2px 10px; font-weight: 700; font-size: .82rem; }
+.life { height: 4px; background: var(--peacock-soft); margin: 0 16px 14px; border-radius: 2px; overflow: hidden; }
+.life b { display: block; height: 100%; background: var(--peacock); border-radius: 2px; }
+.task.late { background: var(--late-soft); }
+.task.late .life { background: var(--late); }
+.left { margin-left: auto; font-variant-numeric: tabular-nums; }
+.task.late .left { color: var(--late); font-weight: 700; }
+
+.clock { padding: 4px 16px 6px; display: flex; align-items: baseline; gap: 12px; }
+.clock .num { font-variation-settings: "wdth" 75; font-weight: 700; font-size: 3.6rem; line-height: 1; font-variant-numeric: tabular-nums; color: var(--ink); }
+.task.running { outline: 3px solid var(--marigold); }
+.clock .phase { color: var(--muted); font-size: .95rem; }
+.actions { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; padding: 0 12px 14px; }
+.actions .wide { grid-column: 1 / -1; }
+.actions button { border: 1.5px solid var(--rule); background: var(--paper); border-radius: 12px; padding: 11px 4px; font-weight: 600; font-size: .95rem; }
+.actions .go { background: var(--marigold); border-color: var(--marigold); color: var(--marigold-ink); }
+.waiting { text-align: center; color: var(--muted); margin: 18px 0 0; }
+.swipe-hint { position: absolute; inset: 0; background: var(--peacock); color: #fff; display: flex; align-items: center; padding-left: 22px; font-weight: 700; opacity: 0; pointer-events: none; }
+.empty { text-align: center; padding: 48px 8px; }
+.empty .big { font-variation-settings: "wdth" 80; font-weight: 700; font-size: 1.8rem; margin: 0 0 8px; }
+
+/* sheets and toast */
+.scrim { position: fixed; inset: 0; background: rgba(4,26,25,.45); display: flex; align-items: flex-end; justify-content: center; z-index: 20; }
+.sheet { background: var(--paper); width: 100%; max-width: 34rem; border-radius: 22px 22px 0 0; padding: 22px 18px calc(env(safe-area-inset-bottom, 0px) + 18px); max-height: 85vh; overflow: auto; }
+.sheet h3 { margin: 0 0 6px; font-size: 1.3rem; font-variation-settings: "wdth" 85; }
+.sheet p { margin: 0 0 12px; }
+.sheet input { width: 100%; border: 1.5px solid var(--rule); background: var(--card); border-radius: 12px; padding: 13px 14px; margin: 4px 0 14px; }
+.sheet .stack { display: grid; gap: 8px; }
+.sheet .muted { color: var(--muted); font-size: .95rem; }
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(env(safe-area-inset-bottom, 0px) + 150px); background: var(--ink); color: var(--paper);
+  border-radius: 12px; padding: 10px 12px 10px 16px; display: flex; align-items: center; gap: 14px; max-width: calc(100% - 36px); z-index: 15; }
+.toast button { background: none; border: 0; color: var(--marigold); font-weight: 700; padding: 6px; }
+[hidden] { display: none !important; }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div><h1 class="brand" style="display:inline">Aaj</h1><span class="date" id="date"></span></div>
+    <button class="icon-btn" id="menuBtn" aria-label="About Aaj and settings">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="5" cy="12" r="2"/><circle cx="12" cy="12" r="2"/><circle cx="19" cy="12" r="2"/></svg>
+    </button>
+  </header>
+  <main id="view" aria-live="polite"></main>
+</div>
+<div class="dock" id="dock"></div>
+<div id="layer"></div>
+
+<script>
+(() => {
+"use strict";
+const KEY = "aaj:v1", DAY = 864e5, FOCUS = 25 * 60e3, BREAK = 5 * 60e3, SLOT_MIN = 30;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const now = () => Date.now();
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+// ---------- state: only open tasks, removed the moment they are resolved ----------
+let S = load();
+function load() {
+  try { const s = JSON.parse(localStorage.getItem(KEY)); if (s && Array.isArray(s.tasks)) return s; } catch (e) {}
+  return { mode: "capture", tasks: [], timer: null, seen: false };
+}
+function save() { try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) {} }
+const uid = () => Math.random().toString(36).slice(2, 10);
+
+// ---------- rules ----------
+const kind = t => t.today == null || t.blocks == null ? "unsorted"
+  : t.today ? (t.blocks === 1 ? "quick" : "big") : (t.blocks === 1 ? "fill" : "sink");
+const isLate = t => now() - t.created >= DAY;
+const totalBlocks = t => t.blocks + (t.extra || 0);
+const remainingMin = t => Math.max(0, totalBlocks(t) - (t.done || 0)) * SLOT_MIN;
+const sorted = () => S.tasks.filter(t => t.placed && !["unsorted", "sink"].includes(kind(t)));
+const fresh = () => S.tasks.filter(t => !t.placed);
+const minutesLeftToday = () => { const d = new Date(); const end = new Date(d); end.setHours(24, 0, 0, 0); return Math.floor((end - d) / 60e3); };
+const plannedMin = () => S.tasks.filter(t => kind(t) !== "sink").reduce((a, t) => a + (t.blocks ? remainingMin(t) : 0), 0);
+const anyLate = () => S.tasks.some(isLate);
+
+// The three: overdue first, then one big task and two quick wins, then whatever is left, fill-ins last.
+function three() {
+  const pool = sorted().slice().sort((a, b) => a.created - b.created);
+  const pick = [], take = t => { if (t && pick.length < 3 && !pick.includes(t)) pick.push(t); };
+  pool.filter(isLate).forEach(take);
+  const big = pool.filter(t => kind(t) === "big"), quick = pool.filter(t => kind(t) === "quick"), fill = pool.filter(t => kind(t) === "fill");
+  if (!pick.some(t => kind(t) === "big")) take(big[0]);
+  quick.forEach(take); big.forEach(take); fill.forEach(take);
+  return pick.sort((a, b) => (kind(b) === "big") - (kind(a) === "big") || (isLate(b) - isLate(a)));
+}
+
+// ---------- formatting ----------
+const fmtMin = m => { const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; };
+const blocksLabel = n => fmtMin(n * 25);
+function lifeLabel(t) {
+  const left = t.created + DAY - now();
+  const h = Math.floor(Math.abs(left) / 36e5), m = Math.floor(Math.abs(left) % 36e5 / 6e4);
+  const s = h ? `${h}h` : `${Math.max(m, 1)}m`;
+  return left >= 0 ? `${s} left` : `${s} over`;
+}
+const mmss = ms => { const s = Math.max(0, Math.ceil(ms / 1000)); return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`; };
+
+// ---------- timer ----------
+function advanceTimer() {
+  const T = S.timer; if (!T || T.paused) return;
+  let changed = false;
+  while (S.timer && !S.timer.paused && now() >= S.timer.endsAt) {
+    const t = S.tasks.find(x => x.id === S.timer.id);
+    if (!t) { S.timer = null; break; }
+    if (S.timer.phase === "focus") {
+      t.done = (t.done || 0) + 1; buzz();
+      if (t.done >= totalBlocks(t)) { S.timer = null; save(); render(); timeUp(t); return; }
+      S.timer = { id: t.id, phase: "break", endsAt: S.timer.endsAt + BREAK };
+    } else {
+      buzz(); S.timer = { id: t.id, phase: "focus", endsAt: S.timer.endsAt + FOCUS };
+    }
+    changed = true;
+  }
+  if (changed) save();
+}
+function startTimer(t) { S.timer = { id: t.id, phase: "focus", endsAt: now() + FOCUS }; save(); render(); }
+function pauseTimer() { const T = S.timer; if (!T) return; T.paused = true; T.left = T.endsAt - now(); save(); render(); }
+function resumeTimer() { const T = S.timer; if (!T) return; T.paused = false; T.endsAt = now() + T.left; delete T.left; save(); render(); }
+function skipBreak() { const T = S.timer; if (!T) return; S.timer = { id: T.id, phase: "focus", endsAt: now() + FOCUS }; save(); render(); }
+function buzz() { try { navigator.vibrate && navigator.vibrate([180, 90, 180]); } catch (e) {} }
+
+// ---------- resolving ----------
+let undoState = null, toastTimer = null;
+function removeTask(t, message) {
+  undoState = { tasks: JSON.parse(JSON.stringify(S.tasks)), timer: S.timer && { ...S.timer } };
+  S.tasks = S.tasks.filter(x => x.id !== t.id);
+  if (S.timer && S.timer.id === t.id) S.timer = null;
+  open = null; save(); render(); toast(message, true);
+}
+function toast(msg, withUndo) {
+  clearTimeout(toastTimer);
+  const el = document.createElement("div"); el.className = "toast"; el.setAttribute("role", "status");
+  el.innerHTML = `<span>${esc(msg)}</span>${withUndo ? '<button type="button">Undo</button>' : ""}`;
+  document.querySelectorAll(".toast").forEach(n => n.remove());
+  document.body.appendChild(el);
+  if (withUndo) el.querySelector("button").onclick = () => {
+    if (undoState) { S.tasks = undoState.tasks; S.timer = undoState.timer; undoState = null; save(); render(); }
+    el.remove();
+  };
+  toastTimer = setTimeout(() => { el.remove(); undoState = null; }, 5000);
+}
+
+// ---------- sheets ----------
+function sheet(html, bind) {
+  const layer = $("#layer");
+  layer.innerHTML = `<div class="scrim"><div class="sheet" role="dialog" aria-modal="true">${html}</div></div>`;
+  const scrim = layer.firstElementChild, close = () => { layer.innerHTML = ""; };
+  scrim.addEventListener("click", e => { if (e.target === scrim) close(); });
+  document.addEventListener("keydown", function k(e) { if (e.key === "Escape") { close(); document.removeEventListener("keydown", k); } });
+  bind(scrim.firstElementChild, close);
+  const f = scrim.querySelector("input, button"); f && f.focus();
+}
+function handOff(t) {
+  sheet(`<h3>Hand off</h3><p class="muted">${esc(t.text)}</p><label for="who">Who's taking it?</label>
+    <input id="who" autocomplete="off" placeholder="A name"><button class="primary" id="ok" disabled>Hand off</button>`, (s, close) => {
+    const who = s.querySelector("#who"), ok = s.querySelector("#ok");
+    who.oninput = () => ok.disabled = !who.value.trim();
+    const go = () => { if (!who.value.trim()) return; close(); removeTask(t, `Handed off to ${who.value.trim()}.`); };
+    ok.onclick = go; who.onkeydown = e => e.key === "Enter" && go();
+  });
+}
+function schedule(t) {
+  const d = new Date(now() + DAY); d.setHours(10, 0, 0, 0);
+  const local = new Date(d - d.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
+  sheet(`<h3>Schedule</h3><p class="muted">${esc(t.text)}</p><label for="when">When will you do it?</label>
+    <input id="when" type="datetime-local" value="${local}">
+    <p class="muted">Aaj doesn't keep anything past today, so put it in your calendar.</p>
+    <div class="stack"><a class="ghost" id="cal" target="_blank" rel="noopener" style="text-align:center;text-decoration:none">Add to Google Calendar</a>
+    <button class="primary" id="ok">Scheduled</button></div>`, (s, close) => {
+    const when = s.querySelector("#when"), cal = s.querySelector("#cal");
+    const link = () => {
+      const st = new Date(when.value), en = new Date(st.getTime() + Math.max(25, (t.blocks || 1) * 25) * 6e4);
+      const f = x => x.toISOString().replace(/[-:]/g, "").replace(/\.\d{3}/, "");
+      cal.href = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(t.text)}&dates=${f(st)}/${f(en)}`;
+    };
+    link(); when.oninput = link;
+    s.querySelector("#ok").onclick = () => { if (!when.value) return; close();
+      removeTask(t, `Scheduled for ${new Date(when.value).toLocaleString("en-IN", { weekday: "short", day: "numeric", month: "short", hour: "numeric", minute: "2-digit" })}.`); };
+  });
+}
+function timeUp(t) {
+  const more = (t.extra || 0) < 1;
+  sheet(`<h3>Time's up</h3><p>${esc(t.text)}</p><div class="stack">
+    <button class="primary" data-a="done">Done</button>
+    ${more ? '<button class="ghost" data-a="more">One more block (25m)</button>' : ""}
+    <button class="ghost" data-a="hand">Hand off</button><button class="ghost" data-a="sched">Schedule</button>
+    <button class="ghost" data-a="drop">Drop</button></div>`, (s, close) => {
+    s.querySelectorAll("[data-a]").forEach(b => b.onclick = () => {
+      close(); const a = b.dataset.a;
+      if (a === "done") removeTask(t, "Done.");
+      if (a === "more") { t.extra = (t.extra || 0) + 1; startTimer(t); }
+      if (a === "hand") handOff(t);
+      if (a === "sched") schedule(t);
+      if (a === "drop") removeTask(t, "Dropped.");
+    });
+  });
+}
+function menu() {
+  sheet(`<h3>How Aaj works</h3>
+    <p>Write down what's on your mind, say how long each thing takes and whether it matters today. Aaj shows you three at a time: one big task to start with, and two quick wins for your breaks.</p>
+    <p>Every task leaves within a day in one of four ways: <strong>done</strong>, <strong>handed off</strong>, <strong>scheduled</strong> or <strong>dropped</strong>. Past 24 hours, a task turns red and you can't add more until it's resolved.</p>
+    <p>The timer works in 25-minute focus blocks with 5-minute breaks. Swipe a task right to mark it done.</p>
+    <h3 style="margin-top:18px">Your privacy</h3>
+    <p class="muted">No account, no tracking, no ads. Open tasks are kept only on this device, and each one is deleted the moment you resolve it. The microphone uses your phone's own speech service, which may send audio to Google or Apple to turn it into text.</p>
+    <p class="muted">Tip: add Aaj to your home screen. It opens full-screen and works offline.</p>
+    <div class="stack" style="margin-top:14px"><button class="ghost" id="wipe">Clear everything</button><button class="primary" id="close">Close</button></div>`, (s, close) => {
+    s.querySelector("#close").onclick = close;
+    s.querySelector("#wipe").onclick = () => {
+      if (!confirm("Clear all tasks from this device?")) return;
+      S = { mode: "capture", tasks: [], timer: null, seen: true }; save(); close(); render();
+    };
+  });
+}
+
+// ---------- voice ----------
+let rec = null;
+function listen(input, onFinal, btn) {
+  if (!SR) return;
+  if (rec) { rec.stop(); return; }
+  rec = new SR(); rec.lang = "en-IN"; rec.interimResults = true; rec.maxAlternatives = 1;
+  let finalText = "";
+  btn.classList.add("on"); btn.setAttribute("aria-label", "Stop listening");
+  input.placeholder = "Listening…";
+  rec.onresult = e => {
+    let interim = ""; finalText = "";
+    for (const r of e.results) (r.isFinal ? (finalText += r[0].transcript) : (interim += r[0].transcript));
+    input.value = (finalText + interim).trim();
+  };
+  rec.onerror = () => {};
+  rec.onend = () => {
+    rec = null; btn.classList.remove("on"); btn.setAttribute("aria-label", "Speak a task"); input.placeholder = "Add a task";
+    const text = (finalText || input.value).trim();
+    if (text) { input.value = ""; onFinal(text, true); }
+  };
+  rec.start();
+}
+const micSVG = '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>';
+
+function composer(onAdd) {
+  return {
+    html: `<div class="composer"><input id="newTask" placeholder="Add a task" autocomplete="off" enterkeyhint="done" aria-label="New task">
+      ${SR ? `<button class="mic" id="mic" aria-label="Speak a task">${micSVG}</button>` : ""}</div>`,
+    bind() {
+      const input = $("#newTask"), mic = $("#mic");
+      input.onkeydown = e => { if (e.key === "Enter" && input.value.trim()) { onAdd(input.value.trim(), false); input.value = ""; } };
+      if (mic) mic.onclick = () => listen(input, onAdd, mic);
+    }
+  };
+}
+function addTask(text, viaVoice) {
+  const t = { id: uid(), text, created: now(), today: null, blocks: null, done: 0, extra: 0 };
+  S.tasks.push(t); S.seen = true; save(); render();
+  if (viaVoice) { undoState = { tasks: S.tasks.filter(x => x.id !== t.id), timer: S.timer }; toast(`Added: ${text}`, true); }
+  const i = $("#newTask"); i && i.focus();
+}
+
+// ---------- views ----------
+let open = null;
+function render() {
+  $("#date").textContent = new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long" });
+  if (S.mode === "capture") return viewCapture(fresh());
+  if (S.mode === "sort") return fresh().length ? viewSort() : (S.mode = "today", save(), render());
+  return viewToday();
+}
+
+function viewCapture(unsorted) {
+  const first = !S.seen && !S.tasks.length;
+  const hasDay = sorted().length > 0;
+  $("#view").innerHTML = `
+    <h2>${hasDay ? "Add to today" : "What's on your mind?"}</h2>
+    <p class="lead">${first ? "Write everything down, or say it. Aaj will show you three at a time, and each one gets resolved within a day." : "One thing at a time. You'll size them next."}</p>
+    <ul class="draft">${unsorted.map(t => `<li><span>${esc(t.text)}</span><button class="x" data-id="${t.id}" aria-label="Remove ${esc(t.text)}">×</button></li>`).join("")}</ul>`;
+  $("#view").querySelectorAll(".x").forEach(b => b.onclick = () => { S.tasks = S.tasks.filter(t => t.id !== b.dataset.id); save(); render(); });
+  const c = composer(addTask);
+  $("#dock").innerHTML = `<div class="dock-inner">${c.html}
+    <div style="display:flex;gap:8px">${hasDay ? '<button class="ghost" id="back" style="flex:none">Back</button>' : ""}
+    <button class="primary" id="next" ${unsorted.length ? "" : "disabled"}>Next</button></div></div>`;
+  c.bind();
+  $("#next").onclick = () => { S.mode = "sort"; save(); render(); window.scrollTo(0, 0); };
+  const back = $("#back"); if (back) back.onclick = () => { S.mode = "today"; save(); render(); };
+}
+
+function viewSort() {
+  const items = fresh();
+  $("#view").innerHTML = `<h2>Size it up</h2><p class="lead">For each one: does it matter today, and roughly how long will it take?</p>` +
+    items.map(t => `<div class="sort-item" data-id="${t.id}">
+      <p class="t">${esc(t.text)}</p>
+      <div class="q"><label>Matters today?</label><div class="seg">
+        <button data-k="today" data-v="1" aria-pressed="${t.today === true}">Yes</button><button data-k="today" data-v="0" aria-pressed="${t.today === false}">No</button></div></div>
+      <div class="q"><label>How long?</label><div class="seg">${[1, 2, 3, 4].map(n => `<button data-k="blocks" data-v="${n}" aria-pressed="${t.blocks === n}">${blocksLabel(n)}</button>`).join("")}</div></div>
+      ${kind(t) === "sink" ? `<div class="sink"><p>Doesn't matter today, and takes a while. Better to hand it off or drop it.</p>
+        <div class="row-btns"><button class="ghost" data-act="hand">Hand off</button><button class="ghost" data-act="drop">Drop</button></div></div>` : ""}
+    </div>`).join("");
+  $("#view").querySelectorAll(".sort-item").forEach(card => {
+    const t = S.tasks.find(x => x.id === card.dataset.id);
+    card.querySelectorAll(".seg button").forEach(b => b.onclick = () => {
+      if (b.dataset.k === "today") t.today = b.dataset.v === "1"; else t.blocks = +b.dataset.v;
+      save(); render();
+    });
+    card.querySelectorAll("[data-act]").forEach(b => b.onclick = () => b.dataset.act === "hand" ? handOff(t) : removeTask(t, "Dropped."));
+  });
+  const pending = items.some(t => kind(t) === "unsorted"), sinks = items.some(t => kind(t) === "sink");
+  const plan = plannedMin(), left = minutesLeftToday(), over = plan > left;
+  const msg = sinks ? "Hand off or drop the tasks that don't matter today."
+    : over ? `That's ${fmtMin(plan)} of work, and only ${fmtMin(left)} left today. Hand off or drop something.`
+    : `Planned ${fmtMin(plan)}. ${fmtMin(left)} left today.`;
+  const started = !!S.started;
+  $("#dock").innerHTML = `<div class="dock-inner"><p class="note ${over || sinks ? "warn" : ""}">${msg}</p>
+    <div style="display:flex;gap:8px"><button class="ghost" id="back" style="flex:none">Back</button>
+    <button class="primary" id="go" ${pending || sinks || over ? "disabled" : ""}>${started ? "Add to today" : "Start my day"}</button></div></div>`;
+  $("#back").onclick = () => { S.mode = "capture"; save(); render(); };
+  $("#go").onclick = () => { items.forEach(t => t.placed = true); S.mode = "today"; S.started = true; save(); render(); window.scrollTo(0, 0); };
+}
+
+function viewToday() {
+  advanceTimer();
+  const list = three(), waiting = sorted().length - list.length, late = anyLate();
+  if (!list.length) {
+    $("#view").innerHTML = `<div class="empty"><p class="big">All clear.</p><p class="lead">Nothing left for today.</p></div>`;
+  } else {
+    const startId = !S.timer && list[0] ? list[0].id : null;
+    $("#view").innerHTML = `<ul class="three">${list.map(t => taskHTML(t, t.id === startId)).join("")}</ul>
+      ${waiting > 0 ? `<p class="waiting">+${waiting} waiting</p>` : ""}`;
+    bindTasks(list);
+  }
+  $("#dock").innerHTML = `<div class="dock-inner">${late ? '<p class="note warn">Resolve the red task before adding more.</p>' : ""}
+    <button class="primary" id="add" ${late ? "disabled" : ""}>Add a task</button></div>`;
+  $("#add").onclick = () => { S.mode = "capture"; save(); render(); setTimeout(() => { const i = $("#newTask"); i && i.focus(); }, 50); };
+}
+
+function taskHTML(t, startHere) {
+  const T = S.timer && S.timer.id === t.id ? S.timer : null;
+  const big = kind(t) === "big", late = isLate(t);
+  const life = Math.max(0, Math.min(1, 1 - (now() - t.created) / DAY));
+  const dots = Array.from({ length: totalBlocks(t) }, (_, i) => `<i class="${i < (t.done || 0) ? "f" : ""} ${i >= t.blocks ? "x" : ""}"></i>`).join("");
+  const remain = T ? (T.paused ? T.left : T.endsAt - now()) : 0;
+  const clock = T ? `<div class="clock"><span class="num" data-clock>${mmss(remain)}</span>
+    <span class="phase">${T.phase === "focus" ? `Focus, block ${(t.done || 0) + 1} of ${totalBlocks(t)}` : "Break"}${T.paused ? ", paused" : ""}</span></div>` : "";
+  const expanded = open === t.id || T;
+  const startBtn = T ? (T.paused ? '<button class="go wide" data-a="resume">Resume</button>'
+      : T.phase === "break" ? '<button class="wide" data-a="skip">Skip break</button>' : '<button class="wide" data-a="pause">Pause</button>')
+    : `<button class="go wide" data-a="start">Start ${blocksLabel(1)} focus</button>`;
+  return `<li class="task ${big ? "big" : ""} ${late ? "late" : ""} ${T ? "running" : ""}" data-id="${t.id}">
+    <div class="swipe-hint" aria-hidden="true">Done</div>
+    <button class="task-main" aria-expanded="${!!expanded}">
+      <span class="title">${esc(t.text)}</span>
+      <span class="meta">${startHere ? '<span class="start-here">Start here</span>' : ""}<span class="dots" aria-label="${t.done || 0} of ${totalBlocks(t)} blocks done">${dots}</span>
+        <span class="left">${lifeLabel(t)}</span></span>
+    </button>
+    ${clock}
+    <div class="life" aria-hidden="true"><b style="width:${late ? 100 : life * 100}%"></b></div>
+    ${expanded ? `<div class="actions">${startBtn}
+      <button data-a="done">Done</button><button data-a="hand">Hand off</button><button data-a="sched">Schedule</button><button data-a="drop">Drop</button></div>` : ""}
+  </li>`;
+}
+
+function bindTasks(list) {
+  document.querySelectorAll(".task").forEach(li => {
+    const t = list.find(x => x.id === li.dataset.id);
+    li.querySelector(".task-main").onclick = () => { open = open === t.id ? null : t.id; render(); };
+    li.querySelectorAll("[data-a]").forEach(b => b.onclick = () => {
+      const a = b.dataset.a;
+      if (a === "start") startTimer(t);
+      if (a === "pause") pauseTimer();
+      if (a === "resume") resumeTimer();
+      if (a === "skip") skipBreak();
+      if (a === "done") removeTask(t, "Done.");
+      if (a === "hand") handOff(t);
+      if (a === "sched") schedule(t);
+      if (a === "drop") removeTask(t, "Dropped.");
+    });
+    swipe(li, () => removeTask(t, "Done."));
+  });
+}
+
+function swipe(li, onDone) {
+  let x0 = null, y0 = null, dx = 0, active = false;
+  const hint = li.querySelector(".swipe-hint");
+  li.addEventListener("touchstart", e => { const p = e.touches[0]; x0 = p.clientX; y0 = p.clientY; dx = 0; active = false; }, { passive: true });
+  li.addEventListener("touchmove", e => {
+    if (x0 == null) return; const p = e.touches[0]; dx = p.clientX - x0; const dy = p.clientY - y0;
+    if (!active && Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy)) active = true;
+    if (active && dx > 0) { li.style.transform = `translateX(${dx}px)`; hint.style.opacity = Math.min(1, dx / 110); }
+  }, { passive: true });
+  li.addEventListener("touchend", () => {
+    if (active && dx > 110) onDone(); else { li.style.transform = ""; hint.style.opacity = 0; }
+    x0 = null; active = false;
+  });
+}
+
+// ---------- clock loop: updates the countdown without redrawing the list ----------
+setInterval(() => {
+  if (S.mode !== "today") return;
+  const before = JSON.stringify(S.timer);
+  advanceTimer();
+  if (JSON.stringify(S.timer) !== before) return render();
+  const T = S.timer, el = document.querySelector("[data-clock]");
+  if (T && el && !T.paused) el.textContent = mmss(T.endsAt - now());
+  document.title = T && !T.paused ? `${mmss(T.endsAt - now())} left: Aaj` : "Aaj: three things, today";
+}, 1000);
+setInterval(() => { if (S.mode === "today" && !S.timer) render(); }, 60000);
+document.addEventListener("visibilitychange", () => { if (!document.hidden) render(); });
+
+$("#menuBtn").onclick = menu;
+if ("serviceWorker" in navigator && location.protocol === "https:") navigator.serviceWorker.register("sw.js").catch(() => {});
+render();
+})();
+</script>
+</body>
+</html>

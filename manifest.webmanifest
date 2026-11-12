@@ -1,0 +1,11 @@
+{
+  "name": "Aaj",
+  "short_name": "Aaj",
+  "description": "Three things, today.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#F3F7F5",
+  "theme_color": "#0E5B5A",
+  "icons": [{ "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any maskable" }]
+}
